@@ -142,6 +142,36 @@
         }
       });
     }
+
+   function login() {
+  const email = document.getElementById('email').value;
+  if (!email) return alert("กรุณากรอกอีเมล");
+  showStatus(true);
+
+  // เปลี่ยนจาก google.script.run เป็น fetch
+  fetch(WEB_APP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "getTeamsByEmail",
+      email: email
+    })
+  })
+  .then(res => res.json())
+  .then(res => {
+    showStatus(false);
+    if (res.error) return alert(res.error);
+    
+    const select = document.getElementById('teamDropdown');
+    select.innerHTML = '<option value="">-- เลือก Team ID --</option>';
+    res.teams.forEach(id => { 
+      select.innerHTML += `<option value="${id}">${id}</option>`; 
+    });
+    
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('selectSection').classList.remove('hidden');
+  })
+  .catch(handleFailure);
+}
 </script>
 </body>
 </html>
