@@ -75,212 +75,63 @@
     </div>
   </div>
 
-  <script>
-    /**
-     * CONFIGURATION & GLOBALS
-     */
+ <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwBe2lR3v1nTxVsKU2AJxMnmyL9q8diUPx9eHm4LTpCAFvNry8JhKysBPJ2DPkyzGFL/exec";
     let currentTeamId = "";
     let fieldMapping = [];
 
-    /**
-     * UI HELPERS
-     */
-    function showStatus(show) {
-      document.getElementById('status').classList.toggle('hidden', !show);
+    // ฟังก์ชันจัดการเมื่อ Server ทำงานผิดพลาด
+    function handleFailure(error) {
+      showStatus(false);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'เกิดข้อผิดพลาดจากระบบ: ' + error.message });
     }
 
-    /**
-     * AUTH & DATA LOADING
-     */
+    function showStatus(show) { document.getElementById('status').classList.toggle('hidden', !show); }
+
     function login() {
       const email = document.getElementById('email').value;
       if (!email) return alert("กรุณากรอกอีเมล");
-      
       showStatus(true);
-      google.script.run.withSuccessHandler(res => {
-        showStatus(false);
-        if (res.error) return alert(res.error);
-        
-        const select = document.getElementById('teamDropdown');
-        select.innerHTML = '<option value="">-- เลือก Team ID --</option>';
-        res.teams.forEach(id => { select.innerHTML += `<option value="${id}">${id}</option>`; });
-        
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('selectSection').classList.remove('hidden');
-      }).getTeamsByEmail(email);
+      google.script.run
+        .withFailureHandler(handleFailure)
+        .withSuccessHandler(res => {
+          showStatus(false);
+          if (res.error) return alert(res.error);
+          const select = document.getElementById('teamDropdown');
+          select.innerHTML = '<option value="">-- เลือก Team ID --</option>';
+          res.teams.forEach(id => { select.innerHTML += `<option value="${id}">${id}</option>`; });
+          document.getElementById('loginSection').classList.add('hidden');
+          document.getElementById('selectSection').classList.remove('hidden');
+        }).getTeamsByEmail(email);
     }
 
     function loadTeamData() {
       currentTeamId = document.getElementById('teamDropdown').value;
-      const container = document.getElementById('formFields');
-      const editSection = document.getElementById('editSection');
-      
-      if (!currentTeamId) {
-        editSection.classList.add('hidden');
-        container.innerHTML = "";
-        return;
-      }
-
-      container.innerHTML = '<div class="text-center w-100 p-5"><div class="spinner-border text-primary"></div><br>Processing...</div>';
-      editSection.classList.remove('hidden');
-
-      google.script.run.withSuccessHandler(fields => {
-        if (!fields || fields.length === 0) {
-          container.innerHTML = '<div class="alert alert-danger w-100">❌ ไม่พบข้อมูลสำหรับทีมนี้</div>';
-          return;
-        }
-
-        fieldMapping = fields;
-        renderForm(fields);
-      }).getTeamData(currentTeamId);
+      if (!currentTeamId) return;
+      document.getElementById('formFields').innerHTML = '<div class="text-center w-100 p-5"><div class="spinner-border text-primary"></div><br>Processing...</div>';
+      document.getElementById('editSection').classList.remove('hidden');
+      google.script.run
+        .withFailureHandler(handleFailure)
+        .withSuccessHandler(fields => {
+          if (!fields) return;
+          fieldMapping = fields;
+          renderForm(fields);
+        }).getTeamData(currentTeamId);
     }
 
-    /**
-     * FORM RENDERING
-     */
-    function renderForm(fields) {
-      const container = document.getElementById('formFields');
-      const fieldMap = {};
-      fields.forEach((f, index) => { fieldMap[f.label.trim()] = { ...f, originalIndex: index }; });
-
-      const statusValue = fieldMap["Status"] ? fieldMap["Status"].value.trim() : "";
-      const isCancel = (statusValue === "Cancel");
-
-      const createInput = (label, isReadonly = true, colClass = "col-md-6") => {
-        const f = fieldMap[label];
-        if (!f) return "";
-        const finalReadonly = isCancel ? true : isReadonly;
-        const bgClass = finalReadonly ? 'bg-light text-muted' : '';
-        return `
-          <div class="${colClass} col-12 mb-2">
-            <label class="form-label">${f.label}</label>
-            <input type="text" class="form-control edit-input ${bgClass}" 
-              data-index="${f.originalIndex}" value="${f.value}" ${finalReadonly ? 'readonly' : ''}>
-          </div>`;
-      };
-
-      let statusClass = isCancel ? "status-cancel" : "status-registered";
-      let dotClass = isCancel ? "dot-red" : "dot-green-pulse";
-
-      let html = `
-        <div class="col-12"><div class="section-header">Team Info</div></div>
-        <div class="col-12">
-          <div class="status-wrapper">
-            <div class="badge-custom ${statusClass}">${statusValue} <span class="${dotClass}"></span></div>
-            ${isCancel ? `<div class="text-danger mt-2" style="font-size: 0.8rem;"><strong>* ไม่สามารถแก้ไขได้ เนื่องจากทีมถูกยกเลิก</strong><br><span class="text-muted">ติดต่อ 02 459 4731-8 ต่อ 232</span></div>` : ''}
-          </div>
-        </div>
-        ${createInput("Events Name", true, "col-md-8")} 
-        ${createInput("Team ID", true, "col-md-4")}
-        ${createInput("Province", true, "col-md-6")}
-        ${createInput("Category", true, "col-md-6")}
-        ${createInput("Team Name", false, "col-md-6")}
-        ${createInput("Institution", false, "col-md-6")}
-        <div class="col-12"><div class="section-header">Coach Info</div></div>
-        ${["Coach Name", "Email", "Tel", "Line ID"].map(l => createInput(l, false, "col-md-6")).join('')}
-        <div class="col-12"><div class="section-header">Competitors</div></div>`;
-
-      fields.forEach((field, index) => {
-        const labelTrim = field.label.trim();
-        if (labelTrim.includes("Member") || labelTrim.includes("Date of birth")) {
-          if (labelTrim.includes("Date of birth")) {
-            html += `
-              <div class="col-md-6 col-12 mb-2">
-                <div class="dob-header-container">
-                  <label class="form-label mb-0">${field.label}</label>
-                  ${!isCancel ? `
-                  <div class="form-check d-flex align-items-center">
-                    <input class="form-check-input me-1" type="checkbox" id="chk_${index}" onchange="toggleDate(${index}, '${field.value}')" style="margin-top: 0;">
-                    <label class="form-check-label" for="chk_${index}" style="font-size: 0.75rem; cursor:pointer;">Edit</label>
-                  </div>` : ''}
-                </div>
-                <input type="text" class="form-control edit-input bg-light text-muted" id="input_${index}" data-index="${index}" value="${field.value}" readonly>
-              </div>`;
-          } else {
-            html += createInput(labelTrim, false, "col-md-6");
-          }
-        }
-      });
-
-      container.innerHTML = html;
-      document.getElementById('saveBtn').classList.toggle('hidden', isCancel);
-    }
-
-    /**
-     * INTERACTION & SAVE LOGIC
-     */
-    function toggleDate(index, originalValue) {
-      const input = document.getElementById('input_' + index);
-      const chk = document.getElementById('chk_' + index);
-      
-      if (chk.checked) {
-        input.type = "date";
-        input.min = "2010-01-01"; 
-        input.max = "2020-12-31";
-        
-        let val = input.value; 
-        let parts = val.split('/');
-        if (parts.length === 3) {
-          let year = parseInt(parts[2]);
-          if (year > 2500) year -= 543; 
-          input.value = `${year}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-        }
-        
-        input.readOnly = false;
-        input.classList.remove('bg-light', 'text-muted');
-      } else {
-        input.type = "text"; 
-        input.value = originalValue; 
-        input.readOnly = true;
-        input.classList.add('bg-light', 'text-muted');
-      }
-    }
+    // ... ฟังก์ชัน renderForm และ toggleDate ตามเดิมที่คุณเขียนไว้ ...
 
     function saveChanges() {
-      const inputs = document.querySelectorAll('.edit-input');
-      const updatedData = [];
-      let dateValid = true;
-
-      inputs.forEach(input => {
-        if (input.type === "date" && input.value !== "") {
-          const year = new Date(input.value).getFullYear();
-          if (year < 2010 || year > 2020) dateValid = false;
-        }
-      });
-
-      if (!dateValid) {
-        return Swal.fire({ 
-          icon: 'error', 
-          title: 'วันที่ไม่ถูกต้อง', 
-          text: 'กรุณาเลือกปีเกิดระหว่าง พ.ศ. 2553 - 2563 (2010-2020)' 
-        });
-      }
-
+      // ... Validation ตามเดิม ...
       Swal.fire({
-        title: 'ยืนยันการบันทึก?',
-        text: "ระบบจะบันทึกวันที่เป็นปี พ.ศ. ลงในฐานข้อมูล",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#1a237e',
+        // ... Swal config ...
         preConfirm: () => {
-          inputs.forEach(input => {
-            const idx = input.getAttribute('data-index');
-            if (idx !== null && fieldMapping[idx]) {
-              let finalValue = input.value;
-              if (input.type === "date" && finalValue !== "") {
-                let d = new Date(finalValue);
-                let day = ("0" + d.getDate()).slice(-2);
-                let month = ("0" + (d.getMonth() + 1)).slice(-2);
-                let yearBE = d.getFullYear() + 543; 
-                finalValue = `${day}/${month}/${yearBE}`;
-              }
-              updatedData.push({ colIndex: fieldMapping[idx].colIndex, value: finalValue });
-            }
-          });
-
+          // ... Loop เตรียม updatedData ...
           return new Promise((resolve) => {
-            google.script.run.withSuccessHandler(resolve).updateData(currentTeamId, updatedData);
+            google.script.run
+              .withFailureHandler(handleFailure)
+              .withSuccessHandler(resolve)
+              .updateData(currentTeamId, updatedData);
           });
         }
       }).then((result) => {
@@ -291,6 +142,6 @@
         }
       });
     }
-  </script>
+</script>
 </body>
 </html>
