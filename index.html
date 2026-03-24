@@ -9,33 +9,13 @@
   <style>
     body { background-color: #f8f9fa; padding: 20px 10px; font-family: 'Prompt', sans-serif; }
     .main-card { max-width: 800px; width: 100%; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-    @media (min-width: 768px) { body { padding: 40px 20px; } .main-card { padding: 30px; } }
-    
     .form-label { font-weight: 600; color: #495057; font-size: 0.85rem; }
     .hidden { display: none; }
     .loading { color: #1a237e; font-style: italic; }
-    
-    .section-header { background-color: #e8eaf6; padding: 8px 12px; border-radius: 5px; margin: 25px 0 10px 0; font-weight: bold; color: #1a237e; border-left: 5px solid #1a237e; font-size: 1rem; }
     .banner-container { width: 100%; overflow: hidden; border-radius: 10px; margin-bottom: 20px; }
     .banner-img { width: 100%; height: auto; display: block; object-fit: cover; }
-    
-    .status-wrapper { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 15px; }
-    .badge-custom { padding: 8px 16px; border-radius: 8px; font-weight: bold; color: white; display: inline-flex; align-items: center; min-width: 120px; font-size: 0.9rem; }
-    .status-registered { background-color: #166534; }
-    .status-cancel { background-color: #dc3545; }
-    
-    .dot-green-pulse { height: 10px; width: 10px; background-color: #2ecc71; border-radius: 50%; margin-left: 10px; box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); animation: pulse-green 2s infinite; }
-    @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); } }
-    
-    .dot-red { height: 10px; width: 10px; background-color: #ffc107; border-radius: 50%; margin-left: 10px; box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); animation: pulse-red 2s infinite; }
-    @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); } }
-    
-    .btn { padding: 10px 20px; font-weight: 600; border-radius: 8px; }
-    .btn-save-custom { background-color: #1a237e !important; border-color: #1a237e !important; color: white !important; transition: 0.3s; }
-    .btn-save-custom:hover { background-color: #0d1440 !important; opacity: 0.9; }
-    
-    .dob-header-container { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
-    @media (max-width: 576px) { .col-md-8, .col-md-4, .col-md-6 { width: 100% !important; } .main-card { border-radius: 0; box-shadow: none; } }
+    .btn-save-custom { background-color: #1a237e !important; color: white !important; }
+    @media (max-width: 576px) { .main-card { border-radius: 0; box-shadow: none; } }
   </style>
 </head>
 
@@ -75,103 +55,98 @@
     </div>
   </div>
 
- <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwBe2lR3v1nTxVsKU2AJxMnmyL9q8diUPx9eHm4LTpCAFvNry8JhKysBPJ2DPkyzGFL/exec";
+  <script>
+    const WEB_APP_URL = "YOUR_WEB_APP_URL_HERE"; // ** วาง URL ที่ได้จากขั้นตอนการ Deploy **
     let currentTeamId = "";
-    let fieldMapping = [];
-
-    // ฟังก์ชันจัดการเมื่อ Server ทำงานผิดพลาด
-    function handleFailure(error) {
-      showStatus(false);
-      Swal.fire({ icon: 'error', title: 'Error', text: 'เกิดข้อผิดพลาดจากระบบ: ' + error.message });
-    }
 
     function showStatus(show) { document.getElementById('status').classList.toggle('hidden', !show); }
+
+    function handleFailure(error) {
+      showStatus(false);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'การเชื่อมต่อผิดพลาด: ' + error });
+    }
+
+    // ฟังก์ชันส่งข้อมูลไปยัง GAS (ใช้ POST)
+    async function callGAS(data) {
+      const response = await fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify(data)
+      });
+      return await response.json();
+    }
 
     function login() {
       const email = document.getElementById('email').value;
       if (!email) return alert("กรุณากรอกอีเมล");
       showStatus(true);
-      google.script.run
-        .withFailureHandler(handleFailure)
-        .withSuccessHandler(res => {
+
+      callGAS({ action: "getTeamsByEmail", email: email })
+        .then(res => {
           showStatus(false);
-          if (res.error) return alert(res.error);
+          if (res.error) return Swal.fire('ไม่พบข้อมูล', res.error, 'warning');
+          
           const select = document.getElementById('teamDropdown');
           select.innerHTML = '<option value="">-- เลือก Team ID --</option>';
           res.teams.forEach(id => { select.innerHTML += `<option value="${id}">${id}</option>`; });
+          
           document.getElementById('loginSection').classList.add('hidden');
           document.getElementById('selectSection').classList.remove('hidden');
-        }).getTeamsByEmail(email);
+        })
+        .catch(handleFailure);
     }
 
     function loadTeamData() {
       currentTeamId = document.getElementById('teamDropdown').value;
       if (!currentTeamId) return;
-      document.getElementById('formFields').innerHTML = '<div class="text-center w-100 p-5"><div class="spinner-border text-primary"></div><br>Processing...</div>';
+      document.getElementById('formFields').innerHTML = '<div class="text-center w-100 p-5"><div class="spinner-border text-primary"></div></div>';
       document.getElementById('editSection').classList.remove('hidden');
-      google.script.run
-        .withFailureHandler(handleFailure)
-        .withSuccessHandler(fields => {
+
+      callGAS({ action: "getTeamData", teamId: currentTeamId })
+        .then(fields => {
           if (!fields) return;
-          fieldMapping = fields;
           renderForm(fields);
-        }).getTeamData(currentTeamId);
+        })
+        .catch(handleFailure);
     }
 
-    // ... ฟังก์ชัน renderForm และ toggleDate ตามเดิมที่คุณเขียนไว้ ...
-
-    function saveChanges() {
-      // ... Validation ตามเดิม ...
-      Swal.fire({
-        // ... Swal config ...
-        preConfirm: () => {
-          // ... Loop เตรียม updatedData ...
-          return new Promise((resolve) => {
-            google.script.run
-              .withFailureHandler(handleFailure)
-              .withSuccessHandler(resolve)
-              .updateData(currentTeamId, updatedData);
-          });
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          Swal.fire({ icon: 'success', title: 'สำเร็จ!' }).then(() => {
-            window.top.location.href = WEB_APP_URL;
-          });
-        }
+    function renderForm(fields) {
+      const container = document.getElementById('formFields');
+      container.innerHTML = "";
+      fields.forEach(item => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 mb-3';
+        col.innerHTML = `
+          <label class="form-label">${item.label}</label>
+          <input type="text" class="form-control team-input" data-col="${item.colIndex}" value="${item.value}">
+        `;
+        container.appendChild(col);
       });
     }
 
-   function login() {
-  const email = document.getElementById('email').value;
-  if (!email) return alert("กรุณากรอกอีเมล");
-  showStatus(true);
+    function saveChanges() {
+      const inputs = document.querySelectorAll('.team-input');
+      const updatedData = Array.from(inputs).map(input => ({
+        colIndex: input.dataset.col,
+        value: input.value
+      }));
 
-  // เปลี่ยนจาก google.script.run เป็น fetch
-  fetch(WEB_APP_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "getTeamsByEmail",
-      email: email
-    })
-  })
-  .then(res => res.json())
-  .then(res => {
-    showStatus(false);
-    if (res.error) return alert(res.error);
-    
-    const select = document.getElementById('teamDropdown');
-    select.innerHTML = '<option value="">-- เลือก Team ID --</option>';
-    res.teams.forEach(id => { 
-      select.innerHTML += `<option value="${id}">${id}</option>`; 
-    });
-    
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('selectSection').classList.remove('hidden');
-  })
-  .catch(handleFailure);
-}
-</script>
+      Swal.fire({
+        title: 'ยืนยันการบันทึก?',
+        showCancelButton: true,
+        confirmButtonText: 'บันทึก',
+        preConfirm: () => {
+          return callGAS({ 
+            action: "updateData", 
+            teamId: currentTeamId, 
+            updatedData: updatedData 
+          });
+        }
+      }).then((result) => {
+        if (result.value && !result.value.error) {
+          Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย', 'success');
+        }
+      });
+    }
+  </script>
 </body>
 </html>
