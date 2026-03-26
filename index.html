@@ -9,13 +9,33 @@
   <style>
     body { background-color: #f8f9fa; padding: 20px 10px; font-family: 'Prompt', sans-serif; }
     .main-card { max-width: 800px; width: 100%; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    @media (min-width: 768px) { body { padding: 40px 20px; } .main-card { padding: 30px; } }
+    
     .form-label { font-weight: 600; color: #495057; font-size: 0.85rem; }
     .hidden { display: none; }
     .loading { color: #1a237e; font-style: italic; }
+    
+    .section-header { background-color: #e8eaf6; padding: 8px 12px; border-radius: 5px; margin: 25px 0 10px 0; font-weight: bold; color: #1a237e; border-left: 5px solid #1a237e; font-size: 1rem; }
     .banner-container { width: 100%; overflow: hidden; border-radius: 10px; margin-bottom: 20px; }
     .banner-img { width: 100%; height: auto; display: block; object-fit: cover; }
-    .btn-save-custom { background-color: #1a237e !important; color: white !important; }
-    @media (max-width: 576px) { .main-card { border-radius: 0; box-shadow: none; } }
+    
+    .status-wrapper { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 15px; }
+    .badge-custom { padding: 8px 16px; border-radius: 8px; font-weight: bold; color: white; display: inline-flex; align-items: center; min-width: 120px; font-size: 0.9rem; }
+    .status-registered { background-color: #166534; }
+    .status-cancel { background-color: #dc3545; }
+    
+    .dot-green-pulse { height: 10px; width: 10px; background-color: #2ecc71; border-radius: 50%; margin-left: 10px; box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); animation: pulse-green 2s infinite; }
+    @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); } }
+    
+    .dot-red { height: 10px; width: 10px; background-color: #ffc107; border-radius: 50%; margin-left: 10px; box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); animation: pulse-red 2s infinite; }
+    @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); } }
+    
+    .btn { padding: 10px 20px; font-weight: 600; border-radius: 8px; }
+    .btn-save-custom { background-color: #1a237e !important; border-color: #1a237e !important; color: white !important; transition: 0.3s; }
+    .btn-save-custom:hover { background-color: #0d1440 !important; opacity: 0.9; }
+    
+    .dob-header-container { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
+    @media (max-width: 576px) { .col-md-8, .col-md-4, .col-md-6 { width: 100% !important; } .main-card { border-radius: 0; box-shadow: none; } }
   </style>
 </head>
 
@@ -55,98 +75,209 @@
     </div>
   </div>
 
-  <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwBe2lR3v1nTxVsKU2AJxMnmyL9q8diUPx9eHm4LTpCAFvNry8JhKysBPJ2DPkyzGFL/exec"; // ** วาง URL ที่ได้จากขั้นตอนการ Deploy **
+<script>
+    // ⚠️ สำคัญ: นำ URL ที่ได้จากการ Deploy Apps Script (แบบ Web App) มาวางที่นี่
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBe2lR3v1nTxVsKU2AJxMnmyL9q8diUPx9eHm4LTpCAFvNry8JhKysBPJ2DPkyzGFL/exec"; 
+
     let currentTeamId = "";
+    let fieldMapping = [];
 
-    function showStatus(show) { document.getElementById('status').classList.toggle('hidden', !show); }
-
-    function handleFailure(error) {
-      showStatus(false);
-      Swal.fire({ icon: 'error', title: 'Error', text: 'การเชื่อมต่อผิดพลาด: ' + error });
+    /**
+     * UI HELPERS
+     */
+    function showStatus(show) {
+        document.getElementById('status').classList.toggle('hidden', !show);
     }
 
-    // ฟังก์ชันส่งข้อมูลไปยัง GAS (ใช้ POST)
-    async function callGAS(data) {
-      const response = await fetch(WEB_APP_URL, {
-        method: "POST",
-        body: JSON.stringify(data)
-      });
-      return await response.json();
+    /**
+     * API CALLER (Helper function สำหรับเรียกใช้ fetch)
+     */
+    async function callApi(payload) {
+        // ใช้ URLSearchParams เพื่อส่งค่าแบบ Form Data (ช่วยเลี่ยงปัญหา CORS ในบางกรณี)
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+        return await response.json();
     }
 
-    function login() {
-      const email = document.getElementById('email').value;
-      if (!email) return alert("กรุณากรอกอีเมล");
-      showStatus(true);
+    /**
+     * AUTH LOGIC
+     */
+    async function login() {
+        const email = document.getElementById('email').value;
+        if (!email) return alert("กรุณากรอกอีเมล");
 
-      callGAS({ action: "getTeamsByEmail", email: email })
-        .then(res => {
-          showStatus(false);
-          if (res.error) return Swal.fire('ไม่พบข้อมูล', res.error, 'warning');
-          
-          const select = document.getElementById('teamDropdown');
-          select.innerHTML = '<option value="">-- เลือก Team ID --</option>';
-          res.teams.forEach(id => { select.innerHTML += `<option value="${id}">${id}</option>`; });
-          
-          document.getElementById('loginSection').classList.add('hidden');
-          document.getElementById('selectSection').classList.remove('hidden');
-        })
-        .catch(handleFailure);
+        showStatus(true);
+        try {
+            const res = await callApi({ action: "getTeams", email: email });
+            showStatus(false);
+            
+            if (res.error) return alert(res.error);
+
+            const select = document.getElementById('teamDropdown');
+            select.innerHTML = '<option value="">-- เลือก Team ID --</option>';
+            res.teams.forEach(id => { 
+                select.innerHTML += `<option value="${id}">${id}</option>`; 
+            });
+
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('selectSection').classList.remove('hidden');
+        } catch (err) {
+            showStatus(false);
+            alert("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
+        }
     }
 
-    function loadTeamData() {
-      currentTeamId = document.getElementById('teamDropdown').value;
-      if (!currentTeamId) return;
-      document.getElementById('formFields').innerHTML = '<div class="text-center w-100 p-5"><div class="spinner-border text-primary"></div></div>';
-      document.getElementById('editSection').classList.remove('hidden');
+    /**
+     * DATA LOADING & RENDERING
+     */
+    async function loadTeamData() {
+        currentTeamId = document.getElementById('teamDropdown').value;
+        const container = document.getElementById('formFields');
+        const editSection = document.getElementById('editSection');
 
-      callGAS({ action: "getTeamData", teamId: currentTeamId })
-        .then(fields => {
-          if (!fields) return;
-          renderForm(fields);
-        })
-        .catch(handleFailure);
+        if (!currentTeamId) {
+            editSection.classList.add('hidden');
+            container.innerHTML = "";
+            return;
+        }
+
+        container.innerHTML = '<div class="text-center w-100 p-5"><div class="spinner-border text-primary"></div><br>Processing...</div>';
+        editSection.classList.remove('hidden');
+
+        try {
+            const fields = await callApi({ action: "getData", teamId: currentTeamId });
+            
+            if (!fields || fields.length === 0) {
+                container.innerHTML = '<div class="alert alert-danger w-100">❌ ไม่พบข้อมูลสำหรับทีมนี้</div>';
+                return;
+            }
+
+            fieldMapping = fields;
+            const fieldMap = {};
+            fields.forEach((f, index) => { fieldMap[f.label.trim()] = { ...f, originalIndex: index }; });
+
+            const statusValue = fieldMap["Status"] ? fieldMap["Status"].value.trim() : "";
+            const isCancel = (statusValue === "Cancel");
+
+            const createInput = (label, isReadonly = true, colClass = "col-md-6") => {
+                const f = fieldMap[label];
+                if (!f) return "";
+                const finalReadonly = isCancel ? true : isReadonly;
+                const bgClass = finalReadonly ? 'bg-light text-muted' : '';
+                return `
+                    <div class="${colClass} col-12 mb-2">
+                        <label class="form-label">${f.label}</label>
+                        <input type="text" class="form-control edit-input ${bgClass}" 
+                            data-index="${f.originalIndex}" value="${f.value}" ${finalReadonly ? 'readonly' : ''}>
+                    </div>`;
+            };
+
+            let statusClass = isCancel ? "status-cancel" : "status-registered";
+            let dotClass = isCancel ? "dot-red" : "dot-green-pulse";
+
+            let html = `
+                <div class="col-12"><div class="section-header">Team Info</div></div>
+                <div class="col-12">
+                    <div class="status-wrapper">
+                        <div class="badge-custom ${statusClass}">${statusValue} <span class="${dotClass}"></span></div>
+                        ${isCancel ? `<div class="text-danger mt-2" style="font-size: 0.8rem;"><strong>* ไม่สามารถแก้ไขได้ เนื่องจากทีมถูกยกเลิก</strong></div>` : ''}
+                    </div>
+                </div>
+                ${createInput("Events Name", true, "col-md-8")} 
+                ${createInput("Team ID", true, "col-md-4")}
+                ${createInput("Province", true, "col-md-6")}
+                ${createInput("Category", true, "col-md-6")}
+                ${createInput("Team Name", false, "col-md-6")}
+                ${createInput("Institution", false, "col-md-6")}
+                <div class="col-12"><div class="section-header">Coach Info</div></div>
+                ${["Coach Name", "Email", "Tel", "Line ID"].map(l => createInput(l, false, "col-md-6")).join('')}
+                <div class="col-12"><div class="section-header">Competitors</div></div>`;
+
+            fields.forEach((field, index) => {
+                const labelTrim = field.label.trim();
+                if (labelTrim.includes("Member") || labelTrim.includes("Date of birth")) {
+                    if (labelTrim.includes("Date of birth")) {
+                        html += `
+                            <div class="col-md-6 col-12 mb-2">
+                                <div class="dob-header-container">
+                                    <label class="form-label mb-0">${field.label}</label>
+                                    ${!isCancel ? `<div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input me-1" type="checkbox" id="chk_${index}" onchange="toggleDate(${index}, '${field.value}')">
+                                        <label class="form-check-label" for="chk_${index}" style="font-size: 0.75rem;">Edit</label>
+                                    </div>` : ''}
+                                </div>
+                                <input type="text" class="form-control edit-input bg-light text-muted" id="input_${index}" data-index="${index}" value="${field.value}" readonly>
+                            </div>`;
+                    } else {
+                        html += createInput(labelTrim, false, "col-md-6");
+                    }
+                }
+            });
+
+            container.innerHTML = html;
+            document.getElementById('saveBtn').classList.toggle('hidden', isCancel);
+        } catch (err) {
+            container.innerHTML = `<div class="alert alert-danger">เกิดข้อผิดพลาด: ${err.message}</div>`;
+        }
     }
 
-    function renderForm(fields) {
-      const container = document.getElementById('formFields');
-      container.innerHTML = "";
-      fields.forEach(item => {
-        const col = document.createElement('div');
-        col.className = 'col-md-6 mb-3';
-        col.innerHTML = `
-          <label class="form-label">${item.label}</label>
-          <input type="text" class="form-control team-input" data-col="${item.colIndex}" value="${item.value}">
-        `;
-        container.appendChild(col);
-      });
+    function toggleDate(index, originalValue) {
+        const input = document.getElementById('input_' + index);
+        const chk = document.getElementById('chk_' + index);
+        if (chk.checked) {
+            input.type = "date";
+            input.readOnly = false;
+            input.classList.remove('bg-light', 'text-muted');
+        } else {
+            input.type = "text";
+            input.value = originalValue;
+            input.readOnly = true;
+            input.classList.add('bg-light', 'text-muted');
+        }
     }
 
+    /**
+     * SAVE LOGIC
+     */
     function saveChanges() {
-      const inputs = document.querySelectorAll('.team-input');
-      const updatedData = Array.from(inputs).map(input => ({
-        colIndex: input.dataset.col,
-        value: input.value
-      }));
+        const inputs = document.querySelectorAll('.edit-input');
+        const updatedData = [];
+        
+        Swal.fire({
+            title: 'ยืนยันการแก้ไข?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'บันทึก',
+            showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                inputs.forEach(input => {
+                    const idx = input.getAttribute('data-index');
+                    if (idx !== null && fieldMapping[idx]) {
+                        let val = input.value;
+                        if (input.type === "date" && val !== "") {
+                            let d = new Date(val);
+                            val = `${("0"+d.getDate()).slice(-2)}/${("0"+(d.getMonth()+1)).slice(-2)}/${d.getFullYear()+543}`;
+                        }
+                        updatedData.push({ colIndex: fieldMapping[idx].colIndex, value: val });
+                    }
+                });
 
-      Swal.fire({
-        title: 'ยืนยันการบันทึก?',
-        showCancelButton: true,
-        confirmButtonText: 'บันทึก',
-        preConfirm: () => {
-          return callGAS({ 
-            action: "updateData", 
-            teamId: currentTeamId, 
-            updatedData: updatedData 
-          });
-        }
-      }).then((result) => {
-        if (result.value && !result.value.error) {
-          Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย', 'success');
-        }
-      });
+                return await callApi({ 
+                    action: "update", 
+                    teamId: currentTeamId, 
+                    updatedValues: updatedData 
+                });
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: result.value });
+                // สามารถสั่งรีโหลดหน้า GitHub Pages ได้ที่นี่
+                location.reload(); 
+            }
+        });
     }
-  </script>
+</script>
 </body>
 </html>
