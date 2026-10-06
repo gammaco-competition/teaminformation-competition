@@ -442,13 +442,13 @@
           document.getElementById('noteTextDisplay').innerText = res.config.noteText || "";
 
           if (res.systemStatus === "NOT_OPEN") {
-            document.getElementById('outsideTitle').innerText = "ยังไม่เปิดใช้งาน";
-            document.getElementById('outsideSubtitle').innerHTML = `ระบบจะเปิดให้เข้าใช้งานในวันที่: <strong>${formatThaiDateTime(res.config.openDate)}</strong>`;
+            document.getElementById('outsideTitle').innerText = "ระบบยังไม่เปิดใช้งาน";
+            document.getElementById('outsideSubtitle').innerHTML = `ระบบจะเปิดในวันที่: <strong>${formatThaiDateTime(res.config.openDate)}</strong>`;
             document.getElementById('outsideSystemSection').classList.remove('hidden');
             document.getElementById('mainContentCard').classList.add('hidden');
           } else if (res.systemStatus === "CLOSED") {
-            document.getElementById('outsideTitle').innerText = "หมดเขตการแก้ไขข้อมูล";
-            document.getElementById('outsideSubtitle').innerHTML = `ระบบปิดรับการแก้ไขเมื่อวันที่: <strong>${formatThaiDateTime(res.config.closeDate)}</strong>`;
+            document.getElementById('outsideTitle').innerText = "สิ้นสุดการแก้ไขข้อมูล";
+            document.getElementById('outsideSubtitle').innerHTML = `ระบบปิดให้แก้ไขเมื่อวันที่: <strong>${formatThaiDateTime(res.config.closeDate)}</strong>`;
             document.getElementById('outsideSystemSection').classList.remove('hidden');
             document.getElementById('mainContentCard').classList.add('hidden');
           } else {
