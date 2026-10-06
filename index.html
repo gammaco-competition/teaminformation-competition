@@ -312,7 +312,7 @@
       return `${day}/${month}/${yearBE} ${hours}:${minutes}:${seconds}`;
     }
 
-    async function apiCall(action, payload = {}) {
+        async function apiCall(action, payload = {}) {
       const requestData = { action, ...payload };
       
       if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -324,11 +324,15 @@
       } else {
         const response = await fetch(SCRIPT_URL, {
           method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8" // ใช้ text/plain เพื่อไม่ให้ติด CORS Preflight บน GitHub
+          },
           body: JSON.stringify(requestData)
         });
         return await response.json();
       }
     }
+
 
     // ==========================================
     // ฟังก์ชันคำนวณและแปลง ค.ศ. เป็น (พ.ศ. xxxx)
@@ -735,7 +739,7 @@
       updateCategoryRulesBySelectedEvents();
     }
 
-    async function login(fromGear = false) {
+        async function login(fromGear = false) {
       loggedEmail = document.getElementById('email').value.trim();
       if (!loggedEmail) return alert("กรุณากรอกอีเมล");
       
@@ -744,11 +748,22 @@
         const res = await apiCall("getTeamsByEmail", { email: loggedEmail });
         showStatus(false);
         
+        // ถ้าฝั่ง Backend ส่งข้อผิดพลาดมา ให้แสดงข้อความจริงออกมา
         if (res.error) {
-          if (fromGear) {
-            return Swal.fire({ icon: 'error', title: 'ไม่อนุญาต', text: 'อีเมลนี้ไม่มีสิทธิ์เข้าถึงส่วนผู้ดูแลระบบ' });
-          }
-          return alert(res.error);
+          return Swal.fire({ 
+            icon: 'error', 
+            title: 'ข้อผิดพลาด', 
+            text: res.error 
+          });
+        }
+
+        // ตรวจสอบสิทธิ์ Admin เมื่อกดมาจากปุ่มเฟือง
+        if (fromGear && !res.isAdmin) {
+          return Swal.fire({ 
+            icon: 'error', 
+            title: 'ไม่อนุญาต', 
+            text: 'อีเมลนี้ไม่มีสิทธิ์เข้าถึงส่วนผู้ดูแลระบบ' 
+          });
         }
 
         if (res.isAdmin) {
@@ -773,12 +788,8 @@
 
           adminEventCategories = res.eventCategories || {};
           currentConfig = res.config;
-          // แสดงเฉพาะ Category ของ Event ที่ถูกเลือกไว้
           updateCategoryRulesBySelectedEvents();
         } else {
-          if (fromGear) {
-            return Swal.fire({ icon: 'error', title: 'ไม่อนุญาต', text: 'อีเมลนี้ไม่มีสิทธิ์เข้าถึงส่วนผู้ดูแลระบบ' });
-          }
           document.getElementById('adminPanelSection').classList.add('hidden');
         }
         
@@ -790,9 +801,14 @@
         document.getElementById('selectSection').classList.remove('hidden');
       } catch (err) {
         showStatus(false);
-        alert("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
+        Swal.fire({
+          icon: 'error',
+          title: 'การเชื่อมต่อขัดข้อง',
+          text: 'ไม่สามารถติดต่อ Web App ได้ กรุณาตรวจสอบ URL หรือสิทธิ์การเข้าถึง: ' + err.message
+        });
       }
     }
+
 
     async function saveAdminSettings() {
       const openDate = document.getElementById('cfgOpenDate').value;
