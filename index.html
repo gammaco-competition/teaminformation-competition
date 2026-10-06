@@ -209,13 +209,13 @@
             <div class="form-check">
               <input class="form-check-input" type="radio" name="imageMode" id="modeBanner" value="BANNER">
               <label class="form-check-label" for="modeBanner">
-                🖼️ <strong>แสดงเป็น Banner</strong> (ความกว้างเต็มการ์ด สัดส่วนเดิม)
+                🖼️ <strong>แสดงเป็น Banner</strong> (ความกว้างเต็มการ์ด)
               </label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="imageMode" id="modeLogo" value="LOGO">
               <label class="form-check-label" for="modeLogo">
-                🛡️ <strong>แสดงเป็นโลโก้</strong> (ขนาด 200 x 200 px กึ่งกลาง)
+                🛡️ <strong>แสดงเป็นโลโก้</strong> (ขนาด 200 x 200 px)
               </label>
             </div>
           </div>
@@ -443,12 +443,12 @@
 
           if (res.systemStatus === "NOT_OPEN") {
             document.getElementById('outsideTitle').innerText = "ระบบยังไม่เปิดใช้งาน";
-            document.getElementById('outsideSubtitle').innerHTML = `ระบบจะเปิดในวันที่: <strong>${formatThaiDateTime(res.config.openDate)}</strong>`;
+            document.getElementById('outsideSubtitle').innerHTML = `ท่านสามารถเข้าใช้งานได้ในวันที่: <strong>${formatThaiDateTime(res.config.openDate)}</strong>`;
             document.getElementById('outsideSystemSection').classList.remove('hidden');
             document.getElementById('mainContentCard').classList.add('hidden');
           } else if (res.systemStatus === "CLOSED") {
-            document.getElementById('outsideTitle').innerText = "สิ้นสุดการแก้ไขข้อมูล";
-            document.getElementById('outsideSubtitle').innerHTML = `ระบบปิดให้แก้ไขเมื่อวันที่: <strong>${formatThaiDateTime(res.config.closeDate)}</strong>`;
+            document.getElementById('outsideTitle').innerText = "ขออภัย.. สิ้นสุดการแก้ไขข้อมูลแล้ว";
+            document.getElementById('outsideSubtitle').innerHTML = `ระบบปิดให้แก้ไขแล้ว เมื่อวันที่: <strong>${formatThaiDateTime(res.config.closeDate)}</strong>`;
             document.getElementById('outsideSystemSection').classList.remove('hidden');
             document.getElementById('mainContentCard').classList.add('hidden');
           } else {
