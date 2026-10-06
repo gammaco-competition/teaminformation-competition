@@ -438,10 +438,43 @@
     // ==========================================
     // โหลดหน้าเว็บและตรวจสอบสถานะเริ่มต้น
     // ==========================================
+        // ปรับปรุงให้หน้าเว็บแสดงผลทันทีโดยใช้ Cache จากเครื่อง (ไม่ต้องรอ Google ปลุกเครื่อง)
     window.addEventListener('DOMContentLoaded', async () => {
+      // 1. ตรวจสอบว่าเคยมี Cache ในเครื่องหรือไม่ ถ้ามีให้เรนเดอร์หน้าเว็บขึ้นมาทันที!
+      const cachedConfig = localStorage.getItem('APP_CFG_CACHE');
+      const cachedStatus = localStorage.getItem('APP_STATUS_CACHE');
+      
+      if (cachedConfig) {
+        try {
+          const cfg = JSON.parse(cachedConfig);
+          applyMediaToAllScreens(cfg);
+          document.getElementById('noteTextDisplay').innerText = cfg.noteText || "";
+          
+          if (cachedStatus === "NOT_OPEN") {
+            document.getElementById('outsideTitle').innerText = "ระบบยังไม่เปิดใช้งาน";
+            document.getElementById('outsideSubtitle').innerHTML = `ท่านสามารถเข้าใช้งานได้ในวันที่: <strong>${formatThaiDateTime(cfg.openDate)}</strong>`;
+            document.getElementById('outsideSystemSection').classList.remove('hidden');
+          } else if (cachedStatus === "CLOSED") {
+            document.getElementById('outsideTitle').innerText = "ขออภัย.. สิ้นสุดการแก้ไขข้อมูลแล้ว";
+            document.getElementById('outsideSubtitle').innerHTML = `ระบบปิดให้แก้ไขแล้ว เมื่อวันที่: <strong>${formatThaiDateTime(cfg.closeDate)}</strong>`;
+            document.getElementById('outsideSystemSection').classList.remove('hidden');
+          } else {
+            document.getElementById('mainContentCard').classList.remove('hidden');
+          }
+        } catch(e) {}
+      } else {
+        // ถ้าเข้าครั้งแรก ให้แสดงกรอบฟอร์มรอไว้ก่อน ไม่ปล่อยให้หน้าขาว
+        document.getElementById('mainContentCard').classList.remove('hidden');
+      }
+
+      // 2. ดึงข้อมูลอัปเดตล่าสุดจาก Google Apps Script ในเบื้องหลัง
       try {
         const res = await apiCall("getInitialData");
         if (res && res.config) {
+          // บันทึกลง Cache สำหรับการเปิดครั้งถัดไป
+          localStorage.setItem('APP_CFG_CACHE', JSON.stringify(res.config));
+          localStorage.setItem('APP_STATUS_CACHE', res.systemStatus);
+
           applyMediaToAllScreens(res.config);
           document.getElementById('noteTextDisplay').innerText = res.config.noteText || "";
 
@@ -459,14 +492,12 @@
             document.getElementById('outsideSystemSection').classList.add('hidden');
             document.getElementById('mainContentCard').classList.remove('hidden');
           }
-        } else {
-          document.getElementById('mainContentCard').classList.remove('hidden');
         }
       } catch (e) { 
-        console.error("Initialization Error:", e);
-        document.getElementById('mainContentCard').classList.remove('hidden');
+        console.error("Initialization Sync Error:", e);
       }
     });
+
 
     async function promptAdminLogin() {
       const { value: email } = await Swal.fire({
