@@ -66,10 +66,24 @@
     
     .section-header { background-color: #e8eaf6; padding: 8px 12px; border-radius: 5px; margin: 25px 0 10px 0; font-weight: bold; color: #1a237e; border-left: 5px solid #1a237e; font-size: 1rem; }
     
-    /* สไตล์สำหรับการแสดงผลแบนเนอร์และโลโก้ */
+    .btn-year-compare {
+      background: #ffffff;
+      border: 1px solid #1a237e;
+      color: #1a237e;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 3px 10px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-year-compare:hover {
+      background: #1a237e;
+      color: #ffffff;
+    }
+
     .app-media-wrapper { width: 100%; margin-bottom: 20px; }
     
-    /* โหมด BANNER */
     .banner-mode-container {
       width: 100%;
       position: relative;
@@ -87,7 +101,6 @@
       transition: opacity 0.8s ease-in-out;
     }
 
-    /* โหมด LOGO (200 x 200 px) */
     .logo-mode-container {
       width: 200px;
       height: 200px;
@@ -110,7 +123,6 @@
       transition: opacity 0.8s ease-in-out;
     }
 
-    /* Slideshow Dots Indicator */
     .slide-dots {
       position: absolute;
       bottom: 8px;
@@ -166,20 +178,16 @@
   <!-- ปุ่มรูปเฟืองมุมขวาบน สำหรับ Admin -->
   <button class="gear-btn" onclick="promptAdminLogin()" title="Admin Setting">⚙️</button>
 
-  <!-- 1. หน้าจอแสดงผลเมื่ออยู่นอกเวลาทำการ (ยังไม่เปิด หรือ หมดเขต) -->
+  <!-- 1. หน้าจอแสดงผลเมื่ออยู่นอกเวลาทำการ -->
   <div id="outsideSystemSection" class="outside-container hidden">
-    <!-- ภาพโลโก้/แบนเนอร์ ตำแหน่งบนสุดของข้อความ -->
     <div id="outsideMediaContainer" class="app-media-wrapper"></div>
     <div id="outsideTitle" class="outside-title"></div>
     <div id="outsideSubtitle" class="outside-subtitle"></div>
   </div>
 
-  <!-- 2. กรอบหลักแสดงผลเมื่อเปิดระบบ หรือเมื่อ Admin เข้าใช้งาน -->
+  <!-- 2. กรอบหลักแสดงผลเมื่อเปิดระบบ -->
   <div id="mainContentCard" class="main-card hidden">
-    <!-- ภาพโลโก้/แบนเนอร์ ตำแหน่งบนสุด -->
     <div id="mainMediaContainer" class="app-media-wrapper"></div>
-
-    <!-- ข้อความหมายเหตุสีแดง -->
     <p id="noteTextDisplay" style="color: red; font-weight: bold;"></p>
 
     <!-- Admin Panel Settings Section -->
@@ -202,43 +210,38 @@
           <textarea id="cfgNoteText" class="form-control form-control-sm" rows="2"></textarea>
         </div>
 
-        <!-- ตัวเลือกโหมดแสดงผลรูปภาพ: Banner หรือ Logo 200x200 px -->
         <div class="col-12 mt-2">
           <label class="form-label fw-bold">รูปแบบการแสดงผลภาพ (Display Mode)</label>
           <div class="d-flex gap-4 p-2 border rounded bg-white">
             <div class="form-check">
               <input class="form-check-input" type="radio" name="imageMode" id="modeBanner" value="BANNER">
               <label class="form-check-label" for="modeBanner">
-                🖼️ <strong>แสดงเป็น Banner</strong> (ความกว้างเต็มการ์ด)
+                🖼️ <strong>Banner</strong> (Size 1200 x 250 px)
               </label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="imageMode" id="modeLogo" value="LOGO">
               <label class="form-check-label" for="modeLogo">
-                🛡️ <strong>แสดงเป็นโลโก้</strong> (ขนาด 200 x 200 px)
+                🛡️ <strong>Logo</strong> (Size 200 x 200 px)
               </label>
             </div>
           </div>
         </div>
 
-        <!-- รายการภาพและการอัปโหลด (สูงสุด 3 ภาพ) -->
         <div class="col-12 mt-3">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <label class="form-label fw-bold mb-0">รูปภาพโลโก้ / แบนเนอร์ (อัปโหลดหรือใส่ URL ได้สูงสุด 3 ภาพ)</label>
             <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" onclick="addImageSlot()" id="btnAddSlot" style="font-size: 0.75rem;">+ เพิ่มภาพ</button>
           </div>
           <small class="text-muted d-block mb-2">* หากมีมากกว่า 1 ภาพ ระบบจะสลับภาพเปลี่ยนเองอัตโนมัติ (Slideshow)</small>
-          
           <div id="imageSlotsContainer"></div>
         </div>
 
-        <!-- ส่วนเลือกล็อก Event -->
         <div class="col-12 mt-2">
           <label class="form-label fw-bold">เลือกล็อก Event Name (ติ๊กเลือกได้มากกว่า 1 รายการ)</label>
           <div id="cfgActiveEventContainer" class="p-2 border rounded bg-white" style="max-height: 160px; overflow-y: auto;"></div>
         </div>
 
-        <!-- ส่วนกำหนดช่วงปีเกิดตาม Category การแข่งขัน (จะแสดงตาม Event ที่เลือกด้านบน) -->
         <div class="col-12 mt-3">
           <label class="form-label fw-bold">🎯 กำหนดช่วงปีเกิดของแต่ละ Category (แสดงตาม Event ที่เลือกไว้)</label>
           <small class="text-muted d-block mb-2">* กรอกปีเป็น ค.ศ. (เช่น 2010) หรือ พ.ศ. (เช่น 2553) ก็ได้ ระบบจะแปลงให้อัตโนมัติ</small>
@@ -312,7 +315,7 @@
       return `${day}/${month}/${yearBE} ${hours}:${minutes}:${seconds}`;
     }
 
-        async function apiCall(action, payload = {}) {
+    async function apiCall(action, payload = {}) {
       const requestData = { action, ...payload };
       
       if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -325,7 +328,7 @@
         const response = await fetch(SCRIPT_URL, {
           method: "POST",
           headers: {
-            "Content-Type": "text/plain;charset=utf-8" // ใช้ text/plain เพื่อไม่ให้ติด CORS Preflight บน GitHub
+            "Content-Type": "text/plain;charset=utf-8"
           },
           body: JSON.stringify(requestData)
         });
@@ -333,10 +336,6 @@
       }
     }
 
-
-    // ==========================================
-    // ฟังก์ชันคำนวณและแปลง ค.ศ. เป็น (พ.ศ. xxxx)
-    // ==========================================
     function getBuddhistYearText(val) {
       if (!val) return "";
       let year = 0;
@@ -361,8 +360,73 @@
     }
 
     // ==========================================
-    // ฟังก์ชันจัดการแสดงผลภาพ (Banner / Logo & Slideshow)
+    // ตารางปฏิทินเทียบ พ.ศ. - ค.ศ. (ย้อนหลัง 50 ปี)
     // ==========================================
+    function showYearComparisonModal() {
+      const currentYearAD = new Date().getFullYear();
+      let tableRows = '';
+      
+      for (let y = currentYearAD; y >= currentYearAD - 50; y--) {
+        const be = y + 543;
+        const age = currentYearAD - y;
+        const isEligible = (y >= currentTeamMinYear && y <= currentTeamMaxYear);
+        const rowClass = isEligible ? 'table-success fw-bold' : '';
+        const badge = isEligible ? ' <span class="badge bg-success ms-1" style="font-size: 0.65rem;">🎯 เกณฑ์รับสมัคร</span>' : '';
+
+        tableRows += `
+          <tr class="${rowClass} year-row" data-search="${be} ${y} ${age}">
+            <td class="text-center">${be}</td>
+            <td class="text-center">${y}</td>
+            <td class="text-center">${age} ปี ${badge}</td>
+          </tr>
+        `;
+      }
+
+      const htmlContent = `
+        <div class="text-start mb-2">
+          <input type="text" id="yearSearchInput" class="form-control form-control-sm" 
+                 placeholder="🔍 พิมพ์ค้นหา เช่น 2555 หรือ 2012..." onkeyup="filterYearTable()">
+        </div>
+        ${currentTeamCategory ? `
+          <div class="alert alert-info py-1 px-2 mb-2 text-start" style="font-size: 0.75rem;">
+            🎯 <strong>เกณฑ์ปัจจุบัน (${currentTeamCategory}):</strong> ค.ศ. ${currentTeamMinYear} - ${currentTeamMaxYear} (พ.ศ. ${currentTeamMinYear + 543} - ${currentTeamMaxYear + 543})
+          </div>
+        ` : ''}
+        <div style="max-height: 380px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px;">
+          <table class="table table-sm table-striped table-hover mb-0 text-center" style="font-size: 0.85rem;" id="yearCompareTable">
+            <thead class="sticky-top" style="z-index: 1;">
+              <tr class="table-primary text-primary">
+                <th style="width: 35%;">พ.ศ.</th>
+                <th style="width: 35%;">ค.ศ.</th>
+                <th style="width: 30%;">อายุ (ปี)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      Swal.fire({
+        title: '📅 ตารางเทียบ พ.ศ. - ค.ศ.',
+        html: htmlContent,
+        width: '480px',
+        showCloseButton: true,
+        confirmButtonText: 'ปิดหน้าต่าง',
+        confirmButtonColor: '#1a237e'
+      });
+    }
+
+    window.filterYearTable = function() {
+      const val = document.getElementById('yearSearchInput').value.trim().toLowerCase();
+      const rows = document.querySelectorAll('#yearCompareTable .year-row');
+      rows.forEach(r => {
+        const data = r.getAttribute('data-search').toLowerCase();
+        r.style.display = data.includes(val) ? '' : 'none';
+      });
+    };
+
     function renderMediaComponent(targetContainerId, urls, mode) {
       const container = document.getElementById(targetContainerId);
       if (!container) return;
@@ -435,12 +499,7 @@
       renderMediaComponent('mainMediaContainer', urls, mode);
     }
 
-    // ==========================================
-    // โหลดหน้าเว็บและตรวจสอบสถานะเริ่มต้น
-    // ==========================================
-        // ปรับปรุงให้หน้าเว็บแสดงผลทันทีโดยใช้ Cache จากเครื่อง (ไม่ต้องรอ Google ปลุกเครื่อง)
     window.addEventListener('DOMContentLoaded', async () => {
-      // 1. ตรวจสอบว่าเคยมี Cache ในเครื่องหรือไม่ ถ้ามีให้เรนเดอร์หน้าเว็บขึ้นมาทันที!
       const cachedConfig = localStorage.getItem('APP_CFG_CACHE');
       const cachedStatus = localStorage.getItem('APP_STATUS_CACHE');
       
@@ -463,15 +522,12 @@
           }
         } catch(e) {}
       } else {
-        // ถ้าเข้าครั้งแรก ให้แสดงกรอบฟอร์มรอไว้ก่อน ไม่ปล่อยให้หน้าขาว
         document.getElementById('mainContentCard').classList.remove('hidden');
       }
 
-      // 2. ดึงข้อมูลอัปเดตล่าสุดจาก Google Apps Script ในเบื้องหลัง
       try {
         const res = await apiCall("getInitialData");
         if (res && res.config) {
-          // บันทึกลง Cache สำหรับการเปิดครั้งถัดไป
           localStorage.setItem('APP_CFG_CACHE', JSON.stringify(res.config));
           localStorage.setItem('APP_STATUS_CACHE', res.systemStatus);
 
@@ -494,10 +550,9 @@
           }
         }
       } catch (e) { 
-        console.error("Initialization Sync Error:", e);
+        console.error("Initialization Error:", e);
       }
     });
-
 
     async function promptAdminLogin() {
       const { value: email } = await Swal.fire({
@@ -516,9 +571,6 @@
       }
     }
 
-    // ==========================================
-    // การจัดการ UI ภาพใน Admin Panel (สูงสุด 3 ภาพ)
-    // ==========================================
     let adminImageSlots = [];
 
     function renderAdminImageSlots(urls) {
@@ -609,9 +661,6 @@
       reader.readAsDataURL(file);
     }
 
-    // ==========================================
-    // การจัดการ Category Rules แบบกรองตาม Event ที่เลือก
-    // ==========================================
     function getCurrentlySelectedEvents() {
       const allChk = document.getElementById('chk_ev_all');
       if (allChk && allChk.checked) {
@@ -714,9 +763,6 @@
       }
     }
 
-    // ==========================================
-    // Event Checkboxes & Login
-    // ==========================================
     function renderEventCheckboxes(allEvents, activeEventSetting) {
       const container = document.getElementById('cfgActiveEventContainer');
       let activeList = [];
@@ -754,7 +800,6 @@
       if (allChk.checked) {
         itemChks.forEach(c => c.checked = false);
       }
-      // อัปเดตรายการ Category ตาม Event ทันที
       updateCategoryRulesBySelectedEvents();
     }
 
@@ -766,11 +811,10 @@
       } else if (itemChks.length === 0 && allChk) {
         allChk.checked = true;
       }
-      // อัปเดตรายการ Category ตาม Event ทันที
       updateCategoryRulesBySelectedEvents();
     }
 
-        async function login(fromGear = false) {
+    async function login(fromGear = false) {
       loggedEmail = document.getElementById('email').value.trim();
       if (!loggedEmail) return alert("กรุณากรอกอีเมล");
       
@@ -779,7 +823,6 @@
         const res = await apiCall("getTeamsByEmail", { email: loggedEmail });
         showStatus(false);
         
-        // ถ้าฝั่ง Backend ส่งข้อผิดพลาดมา ให้แสดงข้อความจริงออกมา
         if (res.error) {
           return Swal.fire({ 
             icon: 'error', 
@@ -788,7 +831,6 @@
           });
         }
 
-        // ตรวจสอบสิทธิ์ Admin เมื่อกดมาจากปุ่มเฟือง
         if (fromGear && !res.isAdmin) {
           return Swal.fire({ 
             icon: 'error', 
@@ -840,7 +882,6 @@
       }
     }
 
-
     async function saveAdminSettings() {
       const openDate = document.getElementById('cfgOpenDate').value;
       const closeDate = document.getElementById('cfgCloseDate').value;
@@ -855,7 +896,6 @@
       });
       if (bannerUrls.length === 0) bannerUrls.push('https://img2.pic.in.th/Banner-CARC-2026.jpg');
 
-      // ดึงกฎเกณฑ์ Category ปัจจุบัน
       const categoryYearRules = getCurrentCategoryRulesFromUI();
       const catRows = document.querySelectorAll('.cat-rule-row');
       catRows.forEach(row => {
@@ -910,9 +950,6 @@
       }
     }
 
-    // ==========================================
-    // การดึงข้อมูลทีมและแสดงฟอร์มแก้ไข
-    // ==========================================
     async function loadTeamData() {
       currentTeamId = document.getElementById('teamDropdown').value;
       const container = document.getElementById('formFields');
@@ -941,7 +978,6 @@
         const statusValue = fieldMap["Status"] ? fieldMap["Status"].value.trim() : "";
         const isCancel = (statusValue === "Cancel");
 
-        // ตรวจสอบ Category และดึงเกณฑ์ช่วงปีเกิดของ Category นั้น
         currentTeamCategory = fieldMap["Category"] ? fieldMap["Category"].value.trim() : "";
         const rules = (currentConfig && currentConfig.categoryYearRules) ? currentConfig.categoryYearRules : {};
         if (rules[currentTeamCategory]) {
@@ -986,7 +1022,14 @@
           <div class="col-12"><div class="section-header">Coach Info</div></div>
           ${["Coach Name", "Email", "Tel", "Line ID"].map(l => createInput(l, false, "col-md-6")).join('')}
           
-          <div class="col-12"><div class="section-header">Competitors</div></div>`;
+          <div class="col-12">
+            <div class="section-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span>Competitors</span>
+              <button type="button" class="btn-year-compare shadow-sm" onclick="showYearComparisonModal()">
+                📅 ตารางเทียบ พ.ศ. - ค.ศ.
+              </button>
+            </div>
+          </div>`;
 
         fields.forEach((field, index) => {
           const labelTrim = field.label.trim();
@@ -1033,8 +1076,6 @@
 
       if (chk.checked) {
         input.type = "date";
-        
-        // ล็อกช่วงปฏิทินตาม Category
         input.min = `${currentTeamMinYear}-01-01`; 
         input.max = `${currentTeamMaxYear}-12-31`;
         
@@ -1063,7 +1104,6 @@
       const updatedData = [];
       let dateValid = true;
 
-      // ตรวจสอบว่าปีเกิดตรงตามเกณฑ์ Category หรือไม่ (ปลอดภัยต่อ Timezone)
       inputs.forEach(input => {
         if (input.type === "date" && input.value !== "") {
           const year = parseInt(input.value.split('-')[0], 10);
@@ -1096,7 +1136,6 @@
             if (idx !== null && fieldMapping[idx]) {
               let finalValue = input.value;
 
-              // แปลง YYYY-MM-DD กลับเป็น dd/MM/yyyy โดยไม่ผ่าน new Date() เพื่อป้องกัน Timezone เพี้ยน
               if (input.type === "date" && finalValue !== "") {
                 let dateParts = finalValue.split('-');
                 if (dateParts.length === 3) {
